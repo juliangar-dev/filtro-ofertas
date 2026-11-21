@@ -6,6 +6,14 @@ sql = open(sys.argv[1], encoding="utf-8").read()
 
 con = sqlite3.connect("ofertas.db")
 cursor = con.execute(sql)
+
+# Si la consulta modifica datos (UPDATE, INSERT, DELETE) no devuelve columnas
+if cursor.description is None:
+    con.commit()
+    print(f"Filas modificadas: {cursor.rowcount}")
+    con.close()
+    sys.exit()
+    
 columnas = [c[0] for c in cursor.description]
 filas = cursor.fetchall()
 con.close()
