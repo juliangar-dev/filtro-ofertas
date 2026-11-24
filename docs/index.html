@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Filtro de ofertas laborales</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header>
+    <h1>Filtro de ofertas laborales</h1>
+    <p>Pegá ofertas copiadas de WhatsApp, LinkedIn o boletines de empleo. Se guardan en una base de datos SQLite dentro de tu navegador y se filtran con SQL según tu perfil. Nada se sube a ningún servidor.</p>
+  </header>
+
+  <main>
+    <section class="tarjeta">
+      <h2>1. Ofertas</h2>
+      <textarea id="texto" placeholder="[10:30, 02/11/2026] Empleos: Búsqueda Laboral: Soporte Técnico Jr.&#10;📍 Palermo, CABA&#10;📩 seleccion@empresa.com"></textarea>
+      <div class="fila">
+        <button id="ejemplo" class="secundario">Cargar ejemplo</button>
+        <button id="limpiar" class="secundario">Borrar</button>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <h2>2. Tu perfil</h2>
+      <div class="perfil">
+        <fieldset>
+          <legend>Zona</legend>
+          <label><input type="checkbox" name="zona" value="CABA" checked> CABA</label>
+          <label><input type="checkbox" name="zona" value="GBA"> GBA</label>
+          <label><input type="checkbox" name="zona" value="Argentina" checked> Argentina (sin barrio)</label>
+          <label><input type="checkbox" name="zona" value="Interior"> Interior</label>
+          <label><input type="checkbox" id="remoto" checked> Incluir remotos</label>
+        </fieldset>
+        <fieldset>
+          <legend>Nivel</legend>
+          <label><input type="checkbox" name="nivel" value="pasantía" checked> Pasantía</label>
+          <label><input type="checkbox" name="nivel" value="jr" checked> Junior</label>
+          <label><input type="checkbox" name="nivel" value="ssr"> Semi senior</label>
+          <label><input type="checkbox" name="nivel" value="sr"> Senior</label>
+          <label><input type="checkbox" id="sinNivel" checked> Sin nivel indicado</label>
+        </fieldset>
+        <fieldset>
+          <legend>Experiencia</legend>
+          <label>Hasta <input type="number" id="anios" min="0" max="10" value="1"> años</label>
+          <label><input type="checkbox" id="excluyente" checked> Ocultar si la experiencia es excluyente</label>
+        </fieldset>
+      </div>
+      <button id="analizar">Buscar ofertas</button>
+    </section>
+
+    <section id="resultados" class="tarjeta oculto">
+      <h2>3. Ofertas que encajan <span id="conteo"></span></h2>
+      <div id="tabla"></div>
+      <details>
+        <summary>Ver la consulta SQL</summary>
+        <pre id="sqlFiltro"></pre>
+      </details>
+    </section>
+
+    <section id="seccionHabilidades" class="tarjeta oculto">
+      <h2>Habilidades más pedidas</h2>
+      <div id="habilidades"></div>
+      <details>
+        <summary>Ver la consulta SQL</summary>
+        <pre id="sqlHabilidades"></pre>
+      </details>
+    </section>
+
+    <section id="seccionSql" class="tarjeta oculto">
+      <h2>Escribí tu propia consulta</h2>
+      <p class="ayuda">Tablas: <code>ofertas</code> (id, fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto) y <code>habilidades</code> (oferta_id, habilidad).</p>
+      <textarea id="consulta" class="codigo">SELECT zona, COUNT(*) AS ofertas
+FROM ofertas
+GROUP BY zona
+ORDER BY ofertas DESC;</textarea>
+      <button id="ejecutar">Ejecutar</button>
+      <div id="resultadoSql"></div>
+    </section>
+  </main>
+
+  <footer>
+    <a href="https://github.com/juliangar-dev/filtro-ofertas">Código en GitHub</a>
+  </footer>
+
+  <script src="vendor/sql-wasm.js"></script>
+  <script src="leer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+// Conecta la página con la base de datos SQLite (sql.js) que corre en el navegador.
+
+let SQL;
+const $ = id => document.getElementById(id);
+
+initSqlJs({ locateFile: f => "vendor/" + f }).then(s => { SQL = s; });
+
+function crearBase(ofertas) {
+  const db = new SQL.Database();
+  db.run(`
+    CREATE TABLE ofertas (
+      id INTEGER PRIMARY KEY, fecha TEXT, fuente TEXT, puesto TEXT, zona TEXT,
+      modalidad TEXT, nivel TEXT, anios_exp INTEGER, exp_excluyente INTEGER,
+      email TEXT, link TEXT, texto TEXT UNIQUE
+    );
+    CREATE TABLE habilidades (oferta_id INTEGER REFERENCES ofertas(id), habilidad TEXT);
+  `);
+  const insertar = db.prepare(`INSERT OR IGNORE INTO ofertas
+    (fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  for (const o of ofertas) {
+    insertar.run([o.fecha, o.fuente, o.puesto, o.zona, o.modalidad, o.nivel,
+      o.anios_exp, o.exp_excluyente, o.email, o.link, o.texto]);
+    if (db.getRowsModified() === 1) {
+      const id = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
+      for (const h of o.habilidades) db.run("INSERT INTO habilidades VALUES (?, ?)", [id, h]);
+    }
+  }
+  insertar.free();
+  return db;
+}
+
+// Arma el WHERE de la consulta según lo que se tildó en el perfil
+function armarFiltro() {
+  const marcados = name => [...document.querySelectorAll(`input[name=${name}]:checked`)].map(i => `'${i.value}'`);
+  const zonas = marcados("zona");
+  const niveles = marcados("nivel");
+  const condiciones = [];
+
+  const zona = [];
+  if (zonas.length) zona.push(`zona IN (${zonas.join(", ")})`);
+  if ($("remoto").checked) zona.push(`modalidad = 'remoto'`);
+  condiciones.push(zona.length ? `(${zona.join(" OR ")})` : "0");
+
+  const nivel = [];
+  if (niveles.length) nivel.push(`nivel IN (${niveles.join(", ")})`);
+  if ($("sinNivel").checked) nivel.push("nivel IS NULL");
+  condiciones.push(nivel.length ? `(${nivel.join(" OR ")})` : "0");
+
+  const anios = Math.max(0, parseInt($("anios").value) || 0);
+  condiciones.push(`(anios_exp IS NULL OR anios_exp <= ${anios})`);
+  if ($("excluyente").checked) condiciones.push("exp_excluyente = 0");
+
+  return condiciones.join("\n  AND ");
+}
+
+function tabla(resultado, conTexto) {
+  if (!resultado.length) return `<p class="vacio">No hay resultados.</p>`;
+  const { columns, values } = resultado[0];
+  const visibles = columns.filter(c => c !== "texto");
+  let html = `<div class="scroll"><table><thead><tr>${visibles.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
+  for (const fila of values) {
+    const dato = Object.fromEntries(columns.map((c, i) => [c, fila[i]]));
+    html += "<tr>" + visibles.map(c => `<td>${formatear(c, dato[c])}</td>`).join("") + "</tr>";
+    if (conTexto && dato.texto) {
+      html += `<tr class="detalle"><td colspan="${visibles.length}"><details><summary>Ver oferta completa</summary><pre>${escapar(dato.texto)}</pre></details></td></tr>`;
+    }
+  }
+  return html + "</tbody></table></div>";
+}
+
+function formatear(columna, valor) {
+  if (valor === null || valor === undefined) return `<span class="nulo">—</span>`;
+  const v = escapar(String(valor));
+  if (columna === "contacto" && v.includes("@")) return `<a href="mailto:${v}">${v}</a>`;
+  if (columna === "contacto" && v.startsWith("http")) return `<a href="${v}" target="_blank" rel="noopener">Abrir link</a>`;
+  return v;
+}
+
+function escapar(s) {
+  return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+let db;
+
+$("analizar").onclick = () => {
+  if (!SQL) return alerta("Cargando la base de datos, probá de nuevo en un segundo.");
+  const ofertas = leerOfertas($("texto").value);
+  if (!ofertas.length) return alerta("No se encontraron ofertas. Pegá el texto o cargá el ejemplo.");
+  db = crearBase(ofertas);
+
+  const total = db.exec("SELECT COUNT(*) FROM ofertas")[0].values[0][0];
+  const where = armarFiltro();
+
+  const sqlFiltro = `SELECT puesto, zona, modalidad, nivel, anios_exp,
+       COALESCE(email, link) AS contacto, texto
+FROM ofertas
+WHERE ${where}
+ORDER BY id;`;
+  const res = db.exec(sqlFiltro);
+  const cantidad = res.length ? res[0].values.length : 0;
+  $("conteo").textContent = `· ${cantidad} de ${total}`;
+  $("tabla").innerHTML = tabla(res, true);
+  $("sqlFiltro").textContent = sqlFiltro;
+
+  const sqlHab = `SELECT h.habilidad, COUNT(*) AS ofertas
+FROM habilidades h
+JOIN ofertas o ON o.id = h.oferta_id
+WHERE ${where.replace(/\b(zona|modalidad|nivel|anios_exp|exp_excluyente)\b/g, "o.$1")}
+GROUP BY h.habilidad
+ORDER BY ofertas DESC;`;
+  const hab = db.exec(sqlHab);
+  $("habilidades").innerHTML = barras(hab);
+  $("sqlHabilidades").textContent = sqlHab;
+
+  for (const id of ["resultados", "seccionHabilidades", "seccionSql"]) $(id).classList.remove("oculto");
+  $("resultados").scrollIntoView({ behavior: "smooth" });
+};
+
+function barras(resultado) {
+  if (!resultado.length) return `<p class="vacio">Las ofertas filtradas no mencionan habilidades conocidas.</p>`;
+  const filas = resultado[0].values;
+  const max = filas[0][1];
+  return filas.map(([nombre, n]) =>
+    `<div class="barra"><span>${escapar(nombre)}</span><div><i style="width:${(n / max) * 100}%"></i></div><b>${n}</b></div>`
+  ).join("");
+}
+
+$("ejecutar").onclick = () => {
+  try {
+    $("resultadoSql").innerHTML = tabla(db.exec($("consulta").value), false);
+  } catch (e) {
+    $("resultadoSql").innerHTML = `<p class="error">Error en la consulta: ${escapar(e.message)}</p>`;
+  }
+};
+
+$("ejemplo").onclick = async () => {
+  $("texto").value = await (await fetch("ejemplo.txt")).text();
+};
+$("limpiar").onclick = () => { $("texto").value = ""; };
+
+function alerta(msg) {
+  $("texto").setCustomValidity(msg);
+  $("texto").reportValidity();
+  setTimeout(() => $("texto").setCustomValidity(""), 2000);
+}
