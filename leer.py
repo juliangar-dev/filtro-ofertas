@@ -149,7 +149,11 @@ def detectar_puesto(texto):
 con = sqlite3.connect("ofertas.db")
 nuevas = 0
 
-for archivo in Path("datos-privados").glob("*.txt"):
+# Si tenés tus propias ofertas en datos-privados/ usa esas; si no, las de ejemplo
+carpeta = Path("datos-privados") if any(Path("datos-privados").glob("*.txt")) else Path("datos-ejemplo")
+print(f"Leyendo ofertas de: {carpeta}")
+
+for archivo in carpeta.glob("*.txt"):
     contenido = archivo.read_text(encoding="utf-8")
     if "JuniorJobs" in contenido[:300]:
         ofertas = separar_boletin(contenido)

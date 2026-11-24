@@ -1,0 +1,36 @@
+[09:15, 02/11/2026] Empleos Ejemplo: 📢 Búsqueda Laboral: Soporte Técnico Jr.
+📍 Palermo, CABA | Presencial
+Buscamos estudiantes de Sistemas o carreras afines para soporte a usuarios (hardware y software).
+✅ Manejo de Windows y paquete Office.
+✅ Inglés intermedio (deseable).
+No se requiere experiencia previa.
+📩 Enviá tu CV a seleccion@empresa-ejemplo.com.ar | Asunto: Soporte Jr
+[09:40, 02/11/2026] Empleos Ejemplo: 🚀 Analista de Datos Semi Senior
+📍 Microcentro, CABA | Modalidad híbrida
+Requisitos:
+* Experiencia de 3 años en análisis de datos (excluyente).
+* SQL avanzado, Python y Power BI.
+📩 rrhh@datos-ejemplo.com
+[10:05, 02/11/2026] Empleos Ejemplo: 🔎 PASANTÍA – Área de Sistemas
+📍 Belgrano, CABA
+Para estudiantes de Ingeniería en Informática o Programación.
+Conocimientos básicos de SQL y Excel.
+Horario: lunes a viernes de 9 a 13 h.
+📩 pasantias@universidad-ejemplo.edu.ar
+[10:30, 02/11/2026] Empleos Ejemplo: Administrativo/a – Pilar, Buenos Aires
+Experiencia mínima de 2 años en tareas administrativas (excluyente).
+Manejo de Excel intermedio y SAP.
+Modalidad presencial.
+📩 administracion@pilar-ejemplo.com.ar
+[11:00, 02/11/2026] Empleos Ejemplo: 💼 Desarrollador/a Python Jr – 100% remoto
+Buscamos perfil junior con conocimientos de Python, Git y SQL.
+Se valora inglés intermedio.
+Postulate en: https://empleos-ejemplo.com/python-jr
+[11:20, 02/11/2026] Empleos Ejemplo: Atención al cliente part-time
+📍 Caballito, CABA
+Turno tarde de 14 a 20 h. Experiencia en atención al público (deseable).
+📩 cv@atencion-ejemplo.com.ar
+[12:00, 02/11/2026] Empleos Ejemplo: Supervisor/a de Depósito
+📍 Córdoba Capital
+Más de 5 años liderando equipos de logística (excluyente). Carnet de conducir vigente.
+📩 logistica@cordoba-ejemplo.com
