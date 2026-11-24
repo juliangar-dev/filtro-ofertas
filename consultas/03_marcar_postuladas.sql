@@ -1,9 +1,5 @@
+-- Poné entre los paréntesis los mails a los que ya enviaste tu CV
 UPDATE ofertas
 SET postulado = 1
-WHERE email IN ('empleos@farmacity.com.ar', 'm.miguel@acebey.com', 'rrhh.mutual22@gmail.com',
-                'conectarggrrhh@gmail.com', 'lizarriaga@cstechlab.com',
-                'oficina@airabuenosaires.com.ar', 'carlagi@epidataconsulting.com')
-   OR texto LIKE '%rrhh@msklatam.com%'
-   OR texto LIKE '%Atención al Cliente / SOI%'
-   OR texto LIKE '%busquedas@evolucionrh.com.ar%'
-   OR link LIKE '%g1YBZq%';
+WHERE email IN ('seleccion@empresa-ejemplo.com.ar', 'cv@atencion-ejemplo.com.ar')
+   OR texto LIKE '%texto-que-identifique-la-oferta%';

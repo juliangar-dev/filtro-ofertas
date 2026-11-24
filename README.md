@@ -1,6 +1,6 @@
 # Filtro de ofertas laborales
 
-Lee ofertas de trabajo publicadas en canales de WhatsApp y boletines de empleo, las guarda en una base de datos SQLite y permite filtrarlas y analizarlas con SQL.
+Lee ofertas de trabajo copiadas de canales de WhatsApp o boletines de empleo, las guarda en una base de datos SQLite y permite filtrarlas y analizarlas con SQL.
 
 ## Cómo funciona
 
@@ -10,13 +10,16 @@ Lee ofertas de trabajo publicadas en canales de WhatsApp y boletines de empleo, 
 
 ## Uso
 
+1. Copiá las ofertas que te interesen (por ejemplo, desde WhatsApp Web) y pegalas en un archivo `.txt` dentro de la carpeta `datos-privados/`.
+2. Ejecutá:
+
 ```
 python crear_db.py
 python leer.py
 python consultar.py consultas/01_para_mi.sql
 ```
 
-Las ofertas van en `datos-privados/` (no se suben al repositorio).
+Si `datos-privados/` está vacía, el programa usa las ofertas inventadas de `datos-ejemplo/` para que puedas probarlo. Tus ofertas nunca se suben al repositorio (`.gitignore`).
 
 ## Consultas
 
