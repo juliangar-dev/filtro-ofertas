@@ -106,3 +106,8 @@ footer a { color: var(--suave); }
 
 button.marca { margin: 0; padding: 4px 10px; font-size: 0.82rem; background: var(--acento-suave); color: var(--acento); white-space: nowrap; }
 button.marca.hecha { background: var(--acento); color: #fff; }
+
+.etiqueta { display: block; margin-top: 16px; font-size: 0.92rem; font-weight: 600; }
+textarea.mensaje { min-height: 110px; margin-top: 6px; }
+a.mail { display: inline-block; background: var(--acento); color: #fff; text-decoration: none; padding: 4px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+.sub { color: var(--suave); font-size: 0.78rem; margin-top: 4px; }

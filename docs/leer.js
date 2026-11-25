@@ -122,6 +122,16 @@ function detectarPuesto(texto) {
   return null;
 }
 
+// Busca el asunto que pide la oferta: "Asunto: Soporte Jr", "REF: ASISTENTE FRONT"...
+function detectarAsunto(texto) {
+  const m = texto.match(/\b(?:asunto(?: sugerido)?|referencia|ref\.?)(?:\s+del\s+(?:correo|mail))?\s*:?\s*(?:pone\s+)?["“']?([^"”'\n|]{3,70})/i);
+  if (!m) return null;
+  // Cortamos en el primer emoji o símbolo raro, y descartamos instrucciones ("la posición y tu remuneración")
+  let asunto = m[1].replace(/[^\w\s\/()áéíóúñÁÉÍÓÚÑüÜ.,:–+-].*$/, "").replace(/[).,;:]+$/, "").trim();
+  if (/^(la posición|nombre de la vacante|y remuner|el puesto|puesto y|con asunto)/i.test(asunto) || asunto.length < 3) return null;
+  return asunto;
+}
+
 function leerOfertas(texto) {
   // Las líneas numeradas con link son de un boletín; el resto, mensajes de WhatsApp
   const esBoletin = l => /^\d+\.\s/.test(l) && LINK.test(l);
@@ -139,6 +149,7 @@ function leerOfertas(texto) {
       nivel: detectarNivel(t) || (o.fuente === "Boletín" ? "jr" : null),
       anios_exp: detectarAnios(t), exp_excluyente: detectarExcluyente(t),
       email: email ? email[0].replace(/\.$/, "") : null, link: link ? link[0] : null,
+      asunto: detectarAsunto(o.texto),
       texto: o.texto.trim(),
       habilidades: Object.entries(HABILIDADES).filter(([, ps]) => ps.some(p => t.includes(p))).map(([h]) => h),
     };

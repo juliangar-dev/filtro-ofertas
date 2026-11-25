@@ -12,16 +12,16 @@ function crearBase(ofertas) {
       id INTEGER PRIMARY KEY, fecha TEXT, fuente TEXT, puesto TEXT, zona TEXT,
       modalidad TEXT, nivel TEXT, anios_exp INTEGER, exp_excluyente INTEGER,
       email TEXT, link TEXT, texto TEXT UNIQUE,
-      clave TEXT, postulado INTEGER DEFAULT 0
+      clave TEXT, postulado INTEGER DEFAULT 0, asunto TEXT
     );
     CREATE TABLE habilidades (oferta_id INTEGER REFERENCES ofertas(id), habilidad TEXT);
   `);
   const insertar = db.prepare(`INSERT OR IGNORE INTO ofertas
-    (fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto, clave)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    (fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto, clave, asunto)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   for (const o of ofertas) {
     insertar.run([o.fecha, o.fuente, o.puesto, o.zona, o.modalidad, o.nivel,
-      o.anios_exp, o.exp_excluyente, o.email, o.link, o.texto, claveDe(o.texto)]);
+      o.anios_exp, o.exp_excluyente, o.email, o.link, o.texto, claveDe(o.texto), o.asunto]);
     if (db.getRowsModified() === 1) {
       const id = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
       for (const h of o.habilidades) db.run("INSERT INTO habilidades VALUES (?, ?)", [id, h]);
@@ -92,16 +92,44 @@ function armarFiltro() {
 function tabla(resultado, conTexto) {
   if (!resultado.length) return `<p class="vacio">No hay resultados.</p>`;
   const { columns, values } = resultado[0];
-  const visibles = columns.filter(c => c !== "texto" && c !== "clave");
+  const visibles = columns.filter(c => !["texto", "clave", "asunto"].includes(c));
   let html = `<div class="scroll"><table><thead><tr>${visibles.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
   for (const fila of values) {
     const dato = Object.fromEntries(columns.map((c, i) => [c, fila[i]]));
-    html += "<tr>" + visibles.map(c => `<td>${c === "postulado" && dato.clave ? botonPostulado(dato) : formatear(c, dato[c])}</td>`).join("") + "</tr>";
+    html += "<tr>" + visibles.map(c => `<td>${
+      c === "postulado" && dato.clave ? botonPostulado(dato)
+      : c === "contacto" && dato.clave ? contacto(dato)
+      : formatear(c, dato[c])}</td>`).join("") + "</tr>";
     if (conTexto && dato.texto) {
       html += `<tr class="detalle"><td colspan="${visibles.length}"><details><summary>Ver oferta completa</summary><pre>${escapar(dato.texto)}</pre></details></td></tr>`;
     }
   }
   return html + "</tbody></table></div>";
+}
+
+// ---------- Mail de postulación ----------
+
+const MENSAJE_INICIAL = `Hola, buenas tardes. Les envío mi CV para la búsqueda de {puesto}.
+
+Quedo a disposición.
+Saludos,
+[Tu nombre]`;
+
+function leerMensaje() {
+  try { return localStorage.getItem("mensaje") || MENSAJE_INICIAL; } catch { return MENSAJE_INICIAL; }
+}
+
+function contacto(dato) {
+  const v = dato.contacto;
+  if (!v) return formatear("contacto", v);
+  if (!v.includes("@")) return formatear("contacto", v);
+  const puesto = (dato.puesto || "el puesto").replace(/^(búsqueda laboral|nueva búsqueda)\W*/i, "").replace(/[.\s]+$/, "");
+  const asunto = dato.asunto || puesto;
+  const cuerpo = leerMensaje().replaceAll("{puesto}", puesto);
+  const gmail = "https://mail.google.com/mail/?view=cm&fs=1"
+    + "&to=" + encodeURIComponent(v) + "&su=" + encodeURIComponent(asunto) + "&body=" + encodeURIComponent(cuerpo);
+  return `<a class="mail" href="${gmail}" target="_blank" rel="noopener">Escribir mail</a>
+    <div class="sub">${escapar(v)}<br>Asunto: ${escapar(asunto)}</div>`;
 }
 
 function botonPostulado(dato) {
@@ -140,7 +168,7 @@ function mostrar() {
   const where = armarFiltro();
 
   const sqlFiltro = `SELECT puesto, zona, modalidad, nivel, anios_exp,
-       COALESCE(email, link) AS contacto, postulado, clave, texto
+       COALESCE(email, link) AS contacto, postulado, clave, asunto, texto
 FROM ofertas
 WHERE ${where}
 ORDER BY id;`;
@@ -167,6 +195,12 @@ $("tabla").addEventListener("click", e => {
 });
 
 $("ocultarPostuladas").onchange = () => { if (db) mostrar(); };
+
+$("mensaje").value = leerMensaje();
+$("mensaje").oninput = () => {
+  try { localStorage.setItem("mensaje", $("mensaje").value); } catch { /* sin almacenamiento */ }
+  if (db) mostrar();
+};
 
 function barras(resultado) {
   if (!resultado.length) return `<p class="vacio">Las ofertas filtradas no mencionan habilidades conocidas.</p>`;
