@@ -2,7 +2,7 @@
 
 Lee ofertas de trabajo copiadas de canales de WhatsApp o boletines de empleo, las guarda en una base de datos SQLite y permite filtrarlas y analizarlas con SQL.
 
-**Usalo online:** https://juliangar-dev.github.io/filtro-ofertas/ — pegás las ofertas, elegís tu perfil y te muestra las que encajan. Todo se procesa en tu navegador; nada se sube a ningún servidor.
+**Usalo online:** https://juliangar-dev.github.io/filtro-ofertas/ — pegás las ofertas, elegís tu perfil y te muestra las que encajan. Podés marcar a cuáles ya te postulaste (queda guardado en tu navegador) y ocultarlas. Todo se procesa en tu navegador; nada se sube a ningún servidor.
 
 También hay una versión de terminal en Python (abajo).
 

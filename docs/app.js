@@ -11,23 +11,57 @@ function crearBase(ofertas) {
     CREATE TABLE ofertas (
       id INTEGER PRIMARY KEY, fecha TEXT, fuente TEXT, puesto TEXT, zona TEXT,
       modalidad TEXT, nivel TEXT, anios_exp INTEGER, exp_excluyente INTEGER,
-      email TEXT, link TEXT, texto TEXT UNIQUE
+      email TEXT, link TEXT, texto TEXT UNIQUE,
+      clave TEXT, postulado INTEGER DEFAULT 0
     );
     CREATE TABLE habilidades (oferta_id INTEGER REFERENCES ofertas(id), habilidad TEXT);
   `);
   const insertar = db.prepare(`INSERT OR IGNORE INTO ofertas
-    (fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    (fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto, clave)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   for (const o of ofertas) {
     insertar.run([o.fecha, o.fuente, o.puesto, o.zona, o.modalidad, o.nivel,
-      o.anios_exp, o.exp_excluyente, o.email, o.link, o.texto]);
+      o.anios_exp, o.exp_excluyente, o.email, o.link, o.texto, claveDe(o.texto)]);
     if (db.getRowsModified() === 1) {
       const id = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
       for (const h of o.habilidades) db.run("INSERT INTO habilidades VALUES (?, ?)", [id, h]);
     }
   }
   insertar.free();
+
+  // Marcar las que ya estaban guardadas como postuladas en este navegador
+  const guardadas = leerPostuladas();
+  if (guardadas.length) {
+    db.run(`UPDATE ofertas SET postulado = 1 WHERE clave IN (${guardadas.map(() => "?").join(", ")})`, guardadas);
+  }
   return db;
+}
+
+// ---------- Postulaciones guardadas en el navegador ----------
+
+// Una "clave" corta que identifica cada oferta a partir de su texto
+function claveDe(texto) {
+  let h = 5381;
+  for (let i = 0; i < texto.length; i++) h = ((h << 5) + h + texto.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+function leerPostuladas() {
+  try { return JSON.parse(localStorage.getItem("postuladas") || "[]"); } catch { return []; }
+}
+
+function guardarPostuladas(lista) {
+  try { localStorage.setItem("postuladas", JSON.stringify(lista)); } catch { /* sin almacenamiento: queda solo en esta sesión */ }
+}
+
+function alternarPostulada(clave) {
+  const lista = leerPostuladas();
+  const ya = lista.includes(clave);
+  guardarPostuladas(ya ? lista.filter(c => c !== clave) : [...lista, clave]);
+  const sql = `UPDATE ofertas SET postulado = ${ya ? 0 : 1} WHERE clave = '${clave}';`;
+  db.run(sql);
+  $("sqlUpdate").textContent = sql;
+  mostrar();
 }
 
 // Arma el WHERE de la consulta según lo que se tildó en el perfil
@@ -50,6 +84,7 @@ function armarFiltro() {
   const anios = Math.max(0, parseInt($("anios").value) || 0);
   condiciones.push(`(anios_exp IS NULL OR anios_exp <= ${anios})`);
   if ($("excluyente").checked) condiciones.push("exp_excluyente = 0");
+  if ($("ocultarPostuladas").checked) condiciones.push("postulado = 0");
 
   return condiciones.join("\n  AND ");
 }
@@ -57,16 +92,22 @@ function armarFiltro() {
 function tabla(resultado, conTexto) {
   if (!resultado.length) return `<p class="vacio">No hay resultados.</p>`;
   const { columns, values } = resultado[0];
-  const visibles = columns.filter(c => c !== "texto");
+  const visibles = columns.filter(c => c !== "texto" && c !== "clave");
   let html = `<div class="scroll"><table><thead><tr>${visibles.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
   for (const fila of values) {
     const dato = Object.fromEntries(columns.map((c, i) => [c, fila[i]]));
-    html += "<tr>" + visibles.map(c => `<td>${formatear(c, dato[c])}</td>`).join("") + "</tr>";
+    html += "<tr>" + visibles.map(c => `<td>${c === "postulado" && dato.clave ? botonPostulado(dato) : formatear(c, dato[c])}</td>`).join("") + "</tr>";
     if (conTexto && dato.texto) {
       html += `<tr class="detalle"><td colspan="${visibles.length}"><details><summary>Ver oferta completa</summary><pre>${escapar(dato.texto)}</pre></details></td></tr>`;
     }
   }
   return html + "</tbody></table></div>";
+}
+
+function botonPostulado(dato) {
+  return dato.postulado
+    ? `<button class="marca hecha" data-clave="${dato.clave}">✓ Postulada</button>`
+    : `<button class="marca" data-clave="${dato.clave}">Marcar</button>`;
 }
 
 function formatear(columna, valor) {
@@ -88,34 +129,44 @@ $("analizar").onclick = () => {
   const ofertas = leerOfertas($("texto").value);
   if (!ofertas.length) return alerta("No se encontraron ofertas. Pegá el texto o cargá el ejemplo.");
   db = crearBase(ofertas);
+  mostrar();
+  for (const id of ["resultados", "seccionHabilidades", "seccionSql"]) $(id).classList.remove("oculto");
+  $("resultados").scrollIntoView({ behavior: "smooth" });
+};
 
+function mostrar() {
   const total = db.exec("SELECT COUNT(*) FROM ofertas")[0].values[0][0];
+  const postuladas = db.exec("SELECT COUNT(*) FROM ofertas WHERE postulado = 1")[0].values[0][0];
   const where = armarFiltro();
 
   const sqlFiltro = `SELECT puesto, zona, modalidad, nivel, anios_exp,
-       COALESCE(email, link) AS contacto, texto
+       COALESCE(email, link) AS contacto, postulado, clave, texto
 FROM ofertas
 WHERE ${where}
 ORDER BY id;`;
   const res = db.exec(sqlFiltro);
   const cantidad = res.length ? res[0].values.length : 0;
-  $("conteo").textContent = `· ${cantidad} de ${total}`;
+  $("conteo").textContent = `· ${cantidad} de ${total}` + (postuladas ? ` · ${postuladas} postuladas` : "");
   $("tabla").innerHTML = tabla(res, true);
   $("sqlFiltro").textContent = sqlFiltro;
 
   const sqlHab = `SELECT h.habilidad, COUNT(*) AS ofertas
 FROM habilidades h
 JOIN ofertas o ON o.id = h.oferta_id
-WHERE ${where.replace(/\b(zona|modalidad|nivel|anios_exp|exp_excluyente)\b/g, "o.$1")}
+WHERE ${where.replace(/\b(zona|modalidad|nivel|anios_exp|exp_excluyente|postulado)\b/g, "o.$1")}
 GROUP BY h.habilidad
 ORDER BY ofertas DESC;`;
   const hab = db.exec(sqlHab);
   $("habilidades").innerHTML = barras(hab);
   $("sqlHabilidades").textContent = sqlHab;
+}
 
-  for (const id of ["resultados", "seccionHabilidades", "seccionSql"]) $(id).classList.remove("oculto");
-  $("resultados").scrollIntoView({ behavior: "smooth" });
-};
+$("tabla").addEventListener("click", e => {
+  const boton = e.target.closest("button.marca");
+  if (boton) alternarPostulada(boton.dataset.clave);
+});
+
+$("ocultarPostuladas").onchange = () => { if (db) mostrar(); };
 
 function barras(resultado) {
   if (!resultado.length) return `<p class="vacio">Las ofertas filtradas no mencionan habilidades conocidas.</p>`;

@@ -45,6 +45,7 @@
           <legend>Experiencia</legend>
           <label>Hasta <input type="number" id="anios" min="0" max="10" value="1"> años</label>
           <label><input type="checkbox" id="excluyente" checked> Ocultar si la experiencia es excluyente</label>
+          <label><input type="checkbox" id="ocultarPostuladas"> Ocultar las que ya me postulé</label>
         </fieldset>
       </div>
       <button id="analizar">Buscar ofertas</button>
@@ -56,6 +57,8 @@
       <details>
         <summary>Ver la consulta SQL</summary>
         <pre id="sqlFiltro"></pre>
+        <p class="ayuda">Último cambio al marcar una postulación:</p>
+        <pre id="sqlUpdate">—</pre>
       </details>
     </section>
 
@@ -70,7 +73,7 @@
 
     <section id="seccionSql" class="tarjeta oculto">
       <h2>Escribí tu propia consulta</h2>
-      <p class="ayuda">Tablas: <code>ofertas</code> (id, fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto) y <code>habilidades</code> (oferta_id, habilidad).</p>
+      <p class="ayuda">Tablas: <code>ofertas</code> (id, fecha, fuente, puesto, zona, modalidad, nivel, anios_exp, exp_excluyente, email, link, texto, postulado) y <code>habilidades</code> (oferta_id, habilidad).</p>
       <textarea id="consulta" class="codigo">SELECT zona, COUNT(*) AS ofertas
 FROM ofertas
 GROUP BY zona
