@@ -174,7 +174,7 @@ WHERE ${where}
 ORDER BY id;`;
   const res = db.exec(sqlFiltro);
   const cantidad = res.length ? res[0].values.length : 0;
-  $("conteo").textContent = `· ${cantidad} de ${total}` + (postuladas ? ` · ${postuladas} postuladas` : "");
+  $("conteo").textContent = `· ${cantidad} de ${total}` + (postuladas ? ` · ${postuladas} postulada${postuladas === 1 ? "" : "s"}` : "");
   $("tabla").innerHTML = tabla(res, true);
   $("sqlFiltro").textContent = sqlFiltro;
 

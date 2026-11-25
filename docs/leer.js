@@ -136,7 +136,11 @@ function leerOfertas(texto) {
   // Las líneas numeradas con link son de un boletín; el resto, mensajes de WhatsApp
   const esBoletin = l => /^\d+\.\s/.test(l) && LINK.test(l);
   const resto = texto.split("\n").filter(l => !esBoletin(l)).join("\n");
-  const lista = [...separarBoletin(texto), ...separarWhatsapp(resto)];
+  // Una oferta de WhatsApp tiene que tener cómo postularse (mail o link);
+  // así se descartan saludos, encabezados de boletines y publicidades sueltas
+  const mensajes = separarWhatsapp(resto).filter(o =>
+    (EMAIL.test(o.texto) || LINK.test(o.texto)) && !/boletín/i.test(o.texto));
+  const lista = [...separarBoletin(texto), ...mensajes];
 
   return lista.map(o => {
     const email = o.texto.match(EMAIL);
